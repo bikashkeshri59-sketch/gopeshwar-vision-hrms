@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gopeshwar Vision HRMS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <video autoplay muted loop id="bg-video">
+        <source src="digital bg.mp4" type="video/mp4">
+    </video>
+    
+    <div class="overlay"></div>
+    
+    <div class="container">
+        <h1>Gopeshwar Vision - HR Management System</h1>
+        
+        <form onsubmit="event.preventDefault(); saveEmployee();">
+            <div class="grid">
+                <input type="text" id="employeeName" placeholder="Employee Name" required>
+                <input type="text" id="designation" placeholder="Designation" required>
+                <input type="number" id="salary" placeholder="Monthly Salary" required>
+                <input type="number" id="increment" placeholder="Increment %" value="0" min="0" max="100">
+                <input type="date" id="joiningDate" required>
+                <input type="email" id="email" placeholder="Employee Email" required>
+                <input type="tel" id="phone" placeholder="Phone (10 digits)" required>
+            </div>
+            
+            <div class="btn-group">
+                <button type="submit" class="save-btn" id="saveBtn">Save Employee</button>
+                <button type="button" class="offer-btn" onclick="generateOfferLetter()">Offer Letter</button>
+                <button type="button" class="join-btn" onclick="generateJoiningLetter()">Joining Letter</button>
+                <button type="button" class="salary-btn" onclick="generateSalarySlip()">Salary Slip</button>
+                <button type="button" class="exp-btn" onclick="generateExperienceLetter()">Experience Letter</button>
+                <button type="button" class="show-btn" onclick="openEmployeePage()">Show Employees</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Load scripts in order -->
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="validation.js"></script>
+    <script src="storage.js"></script>
+    <script src="pdfGenerator.js"></script>
+    <script src="emailService.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
