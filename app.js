@@ -105,6 +105,34 @@ function generateExperienceLetter() {
     showToast('Experience letter generated!', 'success');
 }
 
+function deleteEmployeeRecord(id) {
+    if (confirm('Are you sure you want to delete this employee?')) {
+        try {
+            storage.deleteEmployee(id);
+            showToast('Employee deleted successfully!', 'success');
+            return true;
+        } catch (error) {
+            logError('deleteEmployee', error);
+            showToast('Error deleting employee', 'error');
+            return false;
+        }
+    }
+    return false;
+}
+
+function loadEmployeeForEdit(emp) {
+    document.getElementById('employeeName').value = emp.name;
+    document.getElementById('designation').value = emp.designation;
+    document.getElementById('salary').value = emp.salary;
+    document.getElementById('increment').value = emp.increment;
+    document.getElementById('joiningDate').value = emp.joiningDate;
+    document.getElementById('email').value = emp.email;
+    document.getElementById('phone').value = emp.phone;
+    editingEmployeeId = emp.id;
+    document.getElementById('saveBtn').textContent = 'Update Employee';
+    showToast('Employee loaded for editing', 'info');
+}
+
 function openEmployeePage() {
     const employees = storage.getAllEmployees();
     
@@ -122,10 +150,10 @@ function openEmployeePage() {
             <td>${formatDate(emp.joiningDate)}</td>
             <td>${sanitizeHTML(emp.email)}</td>
             <td>
-                <button onclick="editEmployee('${emp.id}')" style="background:#2563eb; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer;">Edit</button>
+                <button onclick="handleEditEmployee('${emp.id}')" style="background:#2563eb; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer;">Edit</button>
             </td>
             <td>
-                <button onclick="deleteEmployee('${emp.id}')" style="background:#ff1e1e; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer;">Delete</button>
+                <button onclick="handleDeleteEmployee('${emp.id}')" style="background:#ff1e1e; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer;">Delete</button>
             </td>
         </tr>
     `).join('');
@@ -191,28 +219,59 @@ function openEmployeePage() {
                 <button class="print-btn" onclick="window.print()">Print</button>
             </div>
             <script>
-                function editEmployee(id) {
+                function handleEditEmployee(id) {
                     const emp = ${JSON.stringify(employees)}.find(e => e.id === id);
-                    window.opener.loadEmployeeForEdit(emp);
-                    window.close();
-                }
-                function deleteEmployee(id) {
-                    if (confirm('Delete this employee?')) {
-                        window.opener.deleteEmployeeRecord(id);
-                        location.reload();
+                    if (emp && window.opener && !window.opener.closed) {
+                        window.opener.loadEmployeeForEdit(emp);
+                        window.close();
+                    } else {
+                        alert('Error: Unable to access main window');
                     }
                 }
+                
+                function handleDeleteEmployee(id) {
+                    if (confirm('Delete this employee?')) {
+                        if (window.opener && !window.opener.closed) {
+                            const deleted = window.opener.deleteEmployeeRecord(id);
+                            if (deleted) {
+                                setTimeout(() => location.reload(), 500);
+                            }
+                        } else {
+                            alert('Error: Unable to access main window');
+                        }
+                    }
+                }
+                
                 function exportData(format) {
                     const data = ${JSON.stringify(employees)};
+                    if (data.length === 0) {
+                        alert('No data to export');
+                        return;
+                    }
+                    
                     if (format === 'json') {
                         download(JSON.stringify(data, null, 2), 'employees.json', 'application/json');
                     } else {
-                        const csv = [Object.keys(data[0])].concat(data.map(e => Object.values(e))).map(row => 
-                            Array.isArray(row) ? row.map(v => typeof v === 'string' && v.includes(',') ? \`"\${v}"\` : v).join(',') : row.join(',')
-                        ).join('\\n');
-                        download(csv, 'employees.csv', 'text/csv');
+                        try {
+                            const headers = Object.keys(data[0]);
+                            const csv = [headers.join(',')];
+                            data.forEach(emp => {
+                                const row = headers.map(h => {
+                                    const val = emp[h];
+                                    if (typeof val === 'string' && val.includes(',')) {
+                                        return '"' + val + '"';
+                                    }
+                                    return val;
+                                }).join(',');
+                                csv.push(row);
+                            });
+                            download(csv.join('\\n'), 'employees.csv', 'text/csv');
+                        } catch (e) {
+                            alert('Error exporting CSV: ' + e.message);
+                        }
                     }
                 }
+                
                 function download(content, filename, type) {
                     const blob = new Blob([content], { type });
                     const url = window.URL.createObjectURL(blob);
@@ -222,6 +281,7 @@ function openEmployeePage() {
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
                 }
             </script>
         </body>
@@ -229,30 +289,9 @@ function openEmployeePage() {
     `;
 
     const win = window.open('', '_blank');
-    win.document.write(html);
-}
-
-function loadEmployeeForEdit(emp) {
-    document.getElementById('employeeName').value = emp.name;
-    document.getElementById('designation').value = emp.designation;
-    document.getElementById('salary').value = emp.salary;
-    document.getElementById('increment').value = emp.increment;
-    document.getElementById('joiningDate').value = emp.joiningDate;
-    document.getElementById('email').value = emp.email;
-    document.getElementById('phone').value = emp.phone;
-    editingEmployeeId = emp.id;
-    document.getElementById('saveBtn').textContent = 'Update Employee';
-    showToast('Employee loaded for editing', 'info');
-}
-
-function deleteEmployeeRecord(id) {
-    if (confirm('Are you sure you want to delete this employee?')) {
-        try {
-            storage.deleteEmployee(id);
-            showToast('Employee deleted successfully!', 'success');
-        } catch (error) {
-            logError('deleteEmployee', error);
-            showToast('Error deleting employee', 'error');
-        }
+    if (win) {
+        win.document.write(html);
+    } else {
+        alert('Please allow pop-ups to view employee directory');
     }
 }
